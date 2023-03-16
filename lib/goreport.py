@@ -840,120 +840,76 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
 
         target_counter = 0
+
+        # write table headers
+        header_col = 0
+        headers = ["Target", "Event", "Time", "IP", "Location", "Browser", "Operating System", "Position", "Data Captured"]
+        for header in headers:
+            worksheet.write(row, header_col, header, header_format)
+            header_col += 1
+        row += 1
+
         for target in self.results:
-            # Only create a Detailed Analysis section for targets with clicks
-            if target.email in self.targets_clicked:
-                position = ""
-                if target.position:
-                    position = f"({target.position})"
-                worksheet.write(row, col, f"{target.first_name} {target.last_name} {position}", bold_format)
-                row += 1
-                worksheet.write(row, col, target.email, wrap_format)
-                row += 1
-                # Go through all events to find events for this target
-                for event in self.timeline:
-                    if event.message == "Email Sent" and event.email == target.email:
-                        # Parse the timestamp into separate date and time variables
-                        temp = event.time.split('T')
-                        sent_date = temp[0]
-                        sent_time = temp[1].split('.')[0]
-                        # Record the email sent date and time in the report
-                        worksheet.write(row, col, f"Sent on {sent_date.replace(',', '')} at {sent_time}", wrap_format)
-                        row += 1
+            position = ""
+            if target.position:
+                position = f"({target.position})"
+            # Go through all events to find events for this target
+            for event in self.timeline:
+                if event.email == target.email:
+                    # write email
+                    worksheet.write(row, col, target.email, wrap_format)
 
-                    if event.message == "Email Opened" and event.email == target.email:
-                        # Record the email preview date and time in the report
-                        temp = event.time.split('T')
-                        worksheet.write(row, col, f"Email Preview at {temp[0]} {temp[1].split('.')[0]}", wrap_format)
-                        row += 1
+                    # write event name (email opened, clicked, etc.)
+                    worksheet.write(row, col + 1, event.message, wrap_format)
 
-                    if event.message == "Clicked Link" and event.email == target.email:
-                        worksheet.write(row, col, "Email Link Clicked", bold_format)
-                        row += 1
+                    # write event timestamp
+                    temp = event.time.split('T')
+                    worksheet.write(row, col + 2, f"{temp[0]} {temp[1].split('.')[0]}", wrap_format)
 
-                        header_col = 0
-                        headers = ["Time", "IP", "Location", "Browser", "Operating System"]
-                        for header in headers:
-                            worksheet.write(row, header_col, header, header_format)
-                            header_col += 1
-                        row += 1
-
-                        temp = event.time.split('T')
-                        worksheet.write(row, col, f"{temp[0]} {temp[1].split('.')[0]}", wrap_format)
-
-                        # Check if browser IP matches the target's IP and record result
-                        ip_comparison = self.compare_ip_addresses(target.ip,
-                                                                  event.details['browser']['address'],
-                                                                  self.verbose)
-                        worksheet.write(row, col + 1, f"{ip_comparison}", wrap_format)
+                    # record IP result
+                    if event.message == "Clicked Link" or event.message == "Submitted Data":
+                        browser_ip = event.details['browser']['address']
+                        worksheet.write(row, col + 3, f"{browser_ip}", wrap_format)
 
                         # Parse the location data
                         loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 2, loc, wrap_format)
+                        worksheet.write(row, col + 4, loc, wrap_format)
 
                         # Parse the user-agent string and add browser and OS details
                         user_agent = parse(event.details['browser']['user-agent'])
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
-                        worksheet.write(row, col + 3, browser_details, wrap_format)
+                        worksheet.write(row, col + 5, browser_details, wrap_format)
                         self.browsers.append(browser_details)
 
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 4, os_details, wrap_format)
+                        worksheet.write(row, col + 6, os_details, wrap_format)
                         self.operating_systems.append(os_details)
-                        row += 1
 
-                    if event.message == "Submitted Data" and event.email == target.email:
-                        # Now we have events for submitted data. A few notes on this:
-                        #   1. There is no expectation of a Submit event without a Clicked Link event
-                        #   2. Assuming that, the following process does NOT flag IP mismatches
-                        #      or add to the list of seen locations, OSs, IPs, or browsers.
-                        worksheet.write(row, col, "Submitted Data Captured", bold_format)
-                        row += 1
+                        if event.message == "Submitted Data":
+                            # Now we have events for submitted data. A few notes on this:
+                            #   1. There is no expectation of a Submit event without a Clicked Link event
+                            #   2. Assuming that, the following process does NOT flag IP mismatches
+                            #      or add to the list of seen locations, OSs, IPs, or browsers.
 
-                        header_col = 0
-                        headers = ["Time", "IP", "Location", "Browser", "Operating System", "Data Captured"]
-                        for header in headers:
-                            worksheet.write(row, header_col, header, header_format)
-                            header_col += 1
-                        row += 1
+                            # Get just the submitted data from the event's payload
+                            submitted_data = ""
+                            data_payload = event.details['payload']
+                            # Get all of the submitted data
+                            for key, value in data_payload.items():
+                                # To get just submitted data, we drop the 'rid' key
+                                if not key == "rid":
+                                    submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
+                            worksheet.write(row, col + 8, submitted_data, wrap_format)
 
-                        temp = event.time.split('T')
-                        worksheet.write(row, col, f"{temp[0]} {temp[1].split('.')[0]}", wrap_format)
+                    # print position
+                    worksheet.write(row, col + 7, f"{position}", wrap_format)
 
-                        worksheet.write(row, col + 1, f"{event.details['browser']['address']}", wrap_format)
+                    row += 1
 
-                        loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 2, loc, wrap_format)
-
-                        user_agent = parse(event.details['browser']['user-agent'])
-                        browser_details = user_agent.browser.family + " " + \
-                            user_agent.browser.version_string
-                        worksheet.write(row, col + 3, browser_details, wrap_format)
-
-                        os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 4, os_details, wrap_format)
-
-                        # Get just the submitted data from the event's payload
-                        submitted_data = ""
-                        data_payload = event.details['payload']
-                        # Get all of the submitted data
-                        for key, value in data_payload.items():
-                            # To get just submitted data, we drop the 'rid' key
-                            if not key == "rid":
-                                submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                        worksheet.write(row, col + 5, submitted_data, wrap_format)
-                        row += 1
-
-                target_counter += 1
-                print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
-            else:
-                # This target had no clicked or submitted events so move on to next
-                target_counter += 1
-                print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
-                continue
-            worksheet.write(row, col, "")
-            row += 1
+            # count and print processed targets number
+            target_counter += 1
+            print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
 
         print("[+] Finished writing detailed analysis...")
 
