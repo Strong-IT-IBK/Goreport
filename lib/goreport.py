@@ -749,7 +749,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         worksheet.write_number(row, col + 1, self.total_clicked, num_format)
         row += 1
         worksheet.write(row, col, "Total Submitted Data Events", bold_format)
-        worksheet.write(row, col + 1, "", wrap_format)
+        worksheet.write_number(row, col + 1, self.total_submitted, num_format)
         row += 1
         worksheet.write(row, col, "Total Report Events", bold_format)
         worksheet.write_number(row, col + 1, self.total_reported, num_format)
