@@ -843,7 +843,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         # write table headers
         header_col = 0
-        headers = ["Target", "Event", "Time", "IP", "Location", "Browser", "Operating System", "Position", "Data Captured"]
+        headers = ["Target", "Event", "Time", "IP", "Location", "Browser", "Operating System", "Data Captured", "Position", "First Name", "Last Name"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
@@ -851,8 +851,14 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         for target in self.results:
             position = ""
+            fname = ""
+            lname = ""
             if target.position:
                 position = f"({target.position})"
+            if target.first_name:
+                fname = f"({target.first_name})"
+            if target.last_name:
+                lname = f"({target.first_name})"
             # Go through all events to find events for this target
             for event in self.timeline:
                 if event.email == target.email:
@@ -900,10 +906,16 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 # To get just submitted data, we drop the 'rid' key
                                 if not key == "rid":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                            worksheet.write(row, col + 8, submitted_data, wrap_format)
+                            worksheet.write(row, col + 7, submitted_data, wrap_format)
 
                     # print position
-                    worksheet.write(row, col + 7, f"{position}", wrap_format)
+                    worksheet.write(row, col + 8, f"{position}", wrap_format)
+
+                    # print first name
+                    worksheet.write(row, col + 9, f"{fname}", wrap_format)
+
+                    # print last name
+                    worksheet.write(row, col + 10, f"{lname}", wrap_format)
 
                     row += 1
 
