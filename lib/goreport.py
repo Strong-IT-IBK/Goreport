@@ -854,11 +854,11 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             fname = ""
             lname = ""
             if target.position:
-                position = f"({target.position})"
+                position = target.position
             if target.first_name:
-                fname = f"({target.first_name})"
+                fname = target.first_name
             if target.last_name:
-                lname = f"({target.first_name})"
+                lname = target.first_name
             # Go through all events to find events for this target
             for event in self.timeline:
                 if event.email == target.email:
