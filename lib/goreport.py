@@ -1016,7 +1016,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         for key, value in self.ip_and_location.items():
             worksheet.write(row, col, f"{key}", wrap_format)
             worksheet.write(row, col + 1, f"{value['country']}", wrap_format)
-            worksheet.write(row, col + 1, f"{value['city']}", wrap_format)
+            worksheet.write(row, col + 2, f"{value['city']}", wrap_format)
             row += 1
 
         goreport_xlsx.close()
