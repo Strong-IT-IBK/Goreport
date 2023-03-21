@@ -88,7 +88,8 @@ class Goreport(object):
     # Lists for holding totals for statistics
     browsers = []
     locations = []
-    ip_addresses = []
+    ip_addresses = [] # -> target IP addresses
+    total_ip_addresses = [] # -> all event IP addresses
     ip_and_location = {}
     operating_systems = []
 
@@ -288,12 +289,22 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             'loc': '30.0866,-94.1274',
             'postal': '77702',
             'phone': '409',
-            'org': 'AS14618 Amazon.com, Inc.'}
+            'org': 'AS14618 Amazon.com, Inc.'
+            'asn': 'AS14618'
+            'company': 'Amazon.com, Inc.'
+            }
         """
         ipinfo_url = f"https://ipinfo.io/{ip}?token={self.IPINFO_TOKEN}"
         try:
             r = requests.get(ipinfo_url)
-            return r.json()
+            # initialize dict with empty values
+            res = {'ip': '', 'hostname': '', 'city': '','region': '', 'country': '', 'loc': '', 'org': '', 'postal': '', 'timezone': '', 'asn': '', 'company': ''}
+            # update dict with ipinfo results
+            res.update(r.json())
+            # split AS number and ISP company as separete items and update dict
+            asn, company = res['org'].split(' ',1)
+            res.update({'asn': asn, 'company': company})
+            return res
         except Exception as e:
             print(f"[!] Failed to lookup `{ip}` with ipinfo.io.")
             print(f"L.. Details: {e}")
@@ -342,36 +353,20 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         returned. If `google` is set to True this function will try to match the coordinates to a
         location using the Google Maps API.
 
-        Returns a string: City, Region, Country
+        Returns a dict (json) containing: ip, hostname, city, region, country, loc, org, postal, timezone, asn, company
         """
         if ipaddr in self.ip_and_location:
             return self.ip_and_location[ipaddr]
         else:
             if self.IPINFO_TOKEN:
                 # location_json = self.lookup_ip(event.details['browser']['address'])
-                location_json = self.lookup_ip(ipaddr)
-                if location_json:
-                    city = region = country = "Unknown"
-                    if "city" in location_json:
-                        if location_json['city']:
-                            city = location_json['city']
-                    if "region" in location_json:
-                        if location_json['region']:
-                            region = location_json['region']
-                    if "country" in location_json:
-                        if location_json['country']:
-                            country = location_json['country']
-                    location = f"{city}, {region}, {country}"
-                else:
-                    location = f"{target.latitude}, {target.longitude}"
+                location = self.lookup_ip(ipaddr)
             elif google:
                 if self.GEOLOCATE_TOKEN:
                     location = self.get_google_location_data(target.latitude, target.longitude)
-                else:
-                    location = f"{target.latitude}, {target.longitude}"
             else:
-                location = f"{target.latitude}, {target.longitude}"
-            self.locations.append(location)
+                location = {'ip': ipaddr, 'hostname': '', 'city': '','region': '', 'country': '', 'loc': f"{target.latitude},{target.longitude}", 'org': '', 'postal': '', 'timezone': '', 'asn': '', 'company': ''}
+            #self.locations.append(location)
             self.ip_and_location[ipaddr] = location
             return location
 
@@ -525,6 +520,14 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         The timeline model contains all events that occurred during the campaign.
         """
+
+        def check_ip(event):
+            try:
+                ip = event.details['browser']['address']
+                self.total_ip_addresses.append(ip)
+            except:
+                pass
+
         # Create counters for enumeration
         sent_counter = 0
         click_counter = 0
@@ -537,6 +540,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         self.targets_clicked = []
         self.targets_reported = []
         self.targets_submitted = []
+        self.total_ip_addresses = []
         # Run through all events and count each of the four basic events
         for event in self.campaign.timeline:
             if event.message == "Email Sent":
@@ -544,15 +548,19 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             elif event.message == "Email Opened":
                 opened_counter += 1
                 self.targets_opened.append(event.email)
+                check_ip(event)
             elif event.message == "Clicked Link":
                 click_counter += 1
                 self.targets_clicked.append(event.email)
+                check_ip(event)
             elif event.message == "Submitted Data":
                 submitted_counter += 1
                 self.targets_submitted.append(event.email)
+                check_ip(event)
             elif event.message == "Email Reported":
                 reported_counter += 1
                 self.targets_reported.append(event.email)
+                check_ip(event)
         # Assign the counter values to our tracking lists
         if combine_reports:
             # Append, +=, totals if combining reports
@@ -679,6 +687,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         wrap_format = goreport_xlsx.add_format()
         wrap_format.set_text_wrap()
         wrap_format.set_align('vcenter')
+        # Text cells
+        text_format = goreport_xlsx.add_format()
+        text_format.set_num_format('@')
+        text_format.set_align('vcenter')
 
         worksheet = goreport_xlsx.add_worksheet("Overview")
         col = 0
@@ -843,7 +855,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         # write table headers
         header_col = 0
-        headers = ["Target", "Event", "Time", "IP", "Location", "Browser", "Operating System", "Data Captured", "Position", "First Name", "Last Name"]
+        headers = ["Target", "Event", "Time", "IP", "Country", "Browser", "Operating System", "Data Captured", "Position", "First Name", "Last Name","Hostname","City","Region","Location","Postal","Timezone","ASn","Company"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
@@ -879,7 +891,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
                         # Parse the location data
                         loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 4, loc, wrap_format)
+                        worksheet.write(row, col + 4, loc["country"], wrap_format)
 
                         # Parse the user-agent string and add browser and OS details
                         user_agent = parse(event.details['browser']['user-agent'])
@@ -906,7 +918,17 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 # To get just submitted data, we drop the 'rid' key
                                 if not key == "rid":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                            worksheet.write(row, col + 7, submitted_data, wrap_format)
+                            worksheet.write(row, col + 7, submitted_data, text_format)
+
+                        # print geoip data hostname, city, ...
+                        worksheet.write(row, col + 11, loc['hostname'], text_format)
+                        worksheet.write(row, col + 12, loc['city'], text_format)
+                        worksheet.write(row, col + 13, loc['region'], text_format)
+                        worksheet.write(row, col + 14, loc['loc'], text_format)
+                        worksheet.write(row, col + 15, loc['postal'], text_format)
+                        worksheet.write(row, col + 16, loc['timezone'], text_format)
+                        worksheet.write(row, col + 17, loc['asn'], text_format)
+                        worksheet.write(row, col + 18, loc['company'], text_format)
 
                     # print position
                     worksheet.write(row, col + 8, f"{position}", wrap_format)
@@ -966,23 +988,6 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         worksheet.write(row, col, "")
         row += 1
 
-        worksheet.write(row, col, "Recorded Locations from IPs:", bold_format)
-        row += 1
-        header_col = 0
-        headers = ["Locations", "Seen"]
-        for header in headers:
-            worksheet.write(row, header_col, header, header_format)
-            header_col += 1
-        row += 1
-        counted_locations = Counter(self.locations)
-        for key, value in counted_locations.items():
-            worksheet.write(row, col, f"{key}", wrap_format)
-            worksheet.write_number(row, col + 1, value, num_format)
-            row += 1
-
-        worksheet.write(row, col, "")
-        row += 1
-
         worksheet.write(row, col, "Recorded IPs:", bold_format)
         row += 1
         header_col = 0
@@ -991,23 +996,27 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
         row += 1
-        counted_ip_addresses = Counter(self.ip_addresses)
+        counted_ip_addresses = Counter(self.total_ip_addresses)
         for key, value in counted_ip_addresses.items():
             worksheet.write(row, col, f"{key}", wrap_format)
             worksheet.write_number(row, col + 1, value, num_format)
             row += 1
 
+        worksheet.write(row, col, "")
+        row += 1
+
         worksheet.write(row, col, "Recorded IPs and Locations:", bold_format)
         row += 1
         header_col = 0
-        headers = ["IP Address", "Location"]
+        headers = ["IP Address", "Country", "City"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
         row += 1
         for key, value in self.ip_and_location.items():
             worksheet.write(row, col, f"{key}", wrap_format)
-            worksheet.write(row, col + 1, f"{value}", wrap_format)
+            worksheet.write(row, col + 1, f"{value['country']}", wrap_format)
+            worksheet.write(row, col + 1, f"{value['city']}", wrap_format)
             row += 1
 
         goreport_xlsx.close()
