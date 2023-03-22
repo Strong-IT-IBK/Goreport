@@ -795,7 +795,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
 
         header_col = 0
-        headers = ["Email Address", "Open", "Click", "Creds", "Report", "OS", "Browser"]
+        headers = ["Email Address", "First Name", "Last Name", "Position", "Open", "Click", "Creds", "Report", "Browser", "OS"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
@@ -805,23 +805,26 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         target_counter = 0
         ordered_results = sorted(self.campaign_results_summary, key=lambda k: k['email'])
         for target in ordered_results:
-            worksheet.write(row, col, target['email'], wrap_format)
+            worksheet.write(row, col, target['email'], text_format)
+            worksheet.write(row, col + 1, target['fname'], text_format)
+            worksheet.write(row, col + 2, target['lname'], text_format)
+            worksheet.write(row, col + 3, target['position'], text_format)
             if target['opened']:
-                worksheet.write_boolean(row, col + 1, target['opened'], true_format)
+                worksheet.write_boolean(row, col + 4, target['opened'], true_format)
             else:
-                worksheet.write_boolean(row, col + 1, target['opened'], false_format)
+                worksheet.write_boolean(row, col + 4, target['opened'], false_format)
             if target['clicked']:
-                worksheet.write_boolean(row, col + 2, target['clicked'], true_format)
+                worksheet.write_boolean(row, col + 5, target['clicked'], true_format)
             else:
-                worksheet.write_boolean(row, col + 2, target['clicked'], false_format)
+                worksheet.write_boolean(row, col + 5, target['clicked'], false_format)
             if target['submitted']:
-                worksheet.write_boolean(row, col + 3, target['submitted'], true_format)
+                worksheet.write_boolean(row, col + 6, target['submitted'], true_format)
             else:
-                worksheet.write_boolean(row, col + 3, target['submitted'], false_format)
+                worksheet.write_boolean(row, col + 6, target['submitted'], false_format)
             if target['reported']:
-                worksheet.write_boolean(row, col + 4, target['reported'], true_format)
+                worksheet.write_boolean(row, col + 7, target['reported'], true_format)
             else:
-                worksheet.write_boolean(row, col + 4, target['reported'], false_format)
+                worksheet.write_boolean(row, col + 7, target['reported'], false_format)
             if target['email'] in self.targets_clicked:
                 for event in self.timeline:
                     if event.message == "Clicked Link" and event.email == target['email']:
@@ -829,14 +832,15 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 5, browser_details, wrap_format)
-                        worksheet.write(row, col + 6, os_details, wrap_format)
+                        worksheet.write(row, col + 8, browser_details, text_format)
+                        worksheet.write(row, col + 9, os_details, text_format)
             else:
-                worksheet.write(row, col + 5, "N/A", wrap_format)
-                worksheet.write(row, col + 6, "N/A", wrap_format)
+                worksheet.write(row, col + 8, "N/A", text_format)
+                worksheet.write(row, col + 9, "N/A", text_format)
             row += 1
             target_counter += 1
             print(f"[+] Created row for {target_counter} of {self.total_targets}.")
+
 
         print("[+] Finished writing events summary...")
         print("[+] Detailed results analysis is next and will take some time if you had a lot of targets...")
@@ -870,7 +874,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             if target.first_name:
                 fname = target.first_name
             if target.last_name:
-                lname = target.first_name
+                lname = target.last_name
             # Go through all events to find events for this target
             for event in self.timeline:
                 if event.email == target.email:
@@ -1123,25 +1127,37 @@ Individuals Who Submitted: {self.total_unique_submitted}
 
         header1 = table.cell(0, 1)
         header1.text = ""
+        header1.paragraphs[0].add_run("First Name", "Cell Text").bold = True
+
+        header1 = table.cell(0, 2)
+        header1.text = ""
+        header1.paragraphs[0].add_run("Last Name", "Cell Text").bold = True
+
+        header1 = table.cell(0, 3)
+        header1.text = ""
+        header1.paragraphs[0].add_run("Position", "Cell Text").bold = True
+
+        header1 = table.cell(0, 4)
+        header1.text = ""
         header1.paragraphs[0].add_run("Open", "Cell Text").bold = True
 
-        header2 = table.cell(0, 2)
+        header2 = table.cell(0, 5)
         header2.text = ""
         header2.paragraphs[0].add_run("Click", "Cell Text").bold = True
 
-        header3 = table.cell(0, 3)
+        header3 = table.cell(0, 6)
         header3.text = ""
         header3.paragraphs[0].add_run("Data", "Cell Text").bold = True
 
-        header4 = table.cell(0, 4)
+        header4 = table.cell(0, 7)
         header4.text = ""
         header4.paragraphs[0].add_run("Report", "Cell Text").bold = True
 
-        header5 = table.cell(0, 5)
+        header5 = table.cell(0, 8)
         header5.text = ""
         header5.paragraphs[0].add_run("OS", "Cell Text").bold = True
 
-        header6 = table.cell(0, 6)
+        header6 = table.cell(0, 9)
         header6.text = ""
         header6.paragraphs[0].add_run("Browser", "Cell Text").bold = True
 
@@ -1152,26 +1168,32 @@ Individuals Who Submitted: {self.total_unique_submitted}
         for target in ordered_results:
             email_cell = table.cell(counter, 0)
             email_cell.text = f"{target['email']}"
+            fname_cell = table.cell(counter, 1)
+            fname_cell.text = f"{target['fname']}"
+            lname_cell = table.cell(counter, 2)
+            lname_cell.text = f"{target['lname']}"
+            position_cell = table.cell(counter, 3)
+            position_cell.text = f"{target['position']}"
 
-            temp_cell = table.cell(counter, 1)
+            temp_cell = table.cell(counter, 4)
             if target['opened']:
                 temp_cell.paragraphs[0].add_run(u'\u2713', "Cell Text Hit")
             else:
                 temp_cell.paragraphs[0].add_run(u'\u2718', "Cell Text Miss")
 
-            temp_cell = table.cell(counter, 2)
+            temp_cell = table.cell(counter, 5)
             if target['clicked']:
                 temp_cell.paragraphs[0].add_run(u'\u2713', "Cell Text Hit")
             else:
                 temp_cell.paragraphs[0].add_run(u'\u2718', "Cell Text Miss")
 
-            temp_cell = table.cell(counter, 3)
+            temp_cell = table.cell(counter, 6)
             if target['submitted']:
                 temp_cell.paragraphs[0].add_run(u'\u2713', "Cell Text Hit")
             else:
                 temp_cell.paragraphs[0].add_run(u'\u2718', "Cell Text Miss")
 
-            temp_cell = table.cell(counter, 4)
+            temp_cell = table.cell(counter, 7)
             if target['reported']:
                 temp_cell.paragraphs[0].add_run(u'\u2713', "Cell Text Hit")
             else:
@@ -1185,14 +1207,14 @@ Individuals Who Submitted: {self.total_unique_submitted}
                             user_agent.browser.version_string
                         os_details = user_agent.os.family + " " + \
                             user_agent.os.version_string
-                        temp_cell = table.cell(counter, 5)
+                        temp_cell = table.cell(counter, 8)
                         temp_cell.text = os_details
-                        temp_cell = table.cell(counter, 6)
+                        temp_cell = table.cell(counter, 9)
                         temp_cell.text = browser_details
             else:
-                temp_cell = table.cell(counter, 5)
+                temp_cell = table.cell(counter, 8)
                 temp_cell.text = "N/A"
-                temp_cell = table.cell(counter, 6)
+                temp_cell = table.cell(counter, 9)
                 temp_cell.text = "N/A"
             counter += 1
             target_counter += 1
