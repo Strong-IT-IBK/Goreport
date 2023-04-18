@@ -920,7 +920,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                             # Get all of the submitted data
                             for key, value in data_payload.items():
                                 # To get just submitted data, we drop the 'rid' key
-                                if not key == "rid":
+                                if not key == "sq":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
                             worksheet.write(row, col + 7, submitted_data, text_format)
 
@@ -1407,7 +1407,7 @@ Individuals Who Submitted: {self.total_unique_submitted}
                         # Get all of the submitted data
                         for key, value in data_payload.items():
                             # To get just submitted data, we drop the 'rid' key
-                            if not key == "rid":
+                            if not key == "sq":
                                 submitted_data += f"{key}:{str(value).strip('[').strip(']')}   "
                         data.text = f"{submitted_data}"
                         submitted_counter += 1
