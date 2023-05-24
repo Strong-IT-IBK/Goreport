@@ -664,7 +664,6 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         center_format.set_align('center')
         # Header format
         header_format = goreport_xlsx.add_format({'bold': True})
-        header_format.set_text_wrap()
         header_format.set_align('vcenter')
         header_format.set_bg_color(self.xlsx_header_bg_color)
         header_format.set_font_color(self.xlsx_header_font_color)
@@ -691,6 +690,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         text_format = goreport_xlsx.add_format()
         text_format.set_num_format('@')
         text_format.set_align('vcenter')
+        # Custom datetime format
+        custom_datetime_format = goreport_xlsx.add_format()
+        custom_datetime_format.set_num_format('JJJJ-MM-TT hh:mm:ss')
+        custom_datetime_format.set_align('vcenter')
 
         worksheet = goreport_xlsx.add_worksheet("Overview")
         col = 0
@@ -791,11 +794,8 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         worksheet.set_column(0, 10, 20)
 
-        worksheet.write(row, col, "Summary of Events", bold_format)
-        row += 1
-
         header_col = 0
-        headers = ["Email Address", "First Name", "Last Name", "Position", "Open", "Click", "Creds", "Report", "Browser", "OS"]
+        headers = ["Email Address", "First Name", "Last Name", "Position", "Department", "Description", "Open", "Click", "Creds", "Report", "Browser", "OS"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
@@ -809,22 +809,24 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             worksheet.write(row, col + 1, target['fname'], text_format)
             worksheet.write(row, col + 2, target['lname'], text_format)
             worksheet.write(row, col + 3, target['position'], text_format)
+            worksheet.write(row, col + 4, "", text_format)
+            worksheet.write(row, col + 5, "", text_format)
             if target['opened']:
-                worksheet.write_boolean(row, col + 4, target['opened'], true_format)
+                worksheet.write_boolean(row, col + 6, target['opened'], true_format)
             else:
-                worksheet.write_boolean(row, col + 4, target['opened'], false_format)
+                worksheet.write_boolean(row, col + 6, target['opened'], false_format)
             if target['clicked']:
-                worksheet.write_boolean(row, col + 5, target['clicked'], true_format)
+                worksheet.write_boolean(row, col + 7, target['clicked'], true_format)
             else:
-                worksheet.write_boolean(row, col + 5, target['clicked'], false_format)
+                worksheet.write_boolean(row, col + 7, target['clicked'], false_format)
             if target['submitted']:
-                worksheet.write_boolean(row, col + 6, target['submitted'], true_format)
+                worksheet.write_boolean(row, col + 8, target['submitted'], true_format)
             else:
-                worksheet.write_boolean(row, col + 6, target['submitted'], false_format)
+                worksheet.write_boolean(row, col + 8, target['submitted'], false_format)
             if target['reported']:
-                worksheet.write_boolean(row, col + 7, target['reported'], true_format)
+                worksheet.write_boolean(row, col + 9, target['reported'], true_format)
             else:
-                worksheet.write_boolean(row, col + 7, target['reported'], false_format)
+                worksheet.write_boolean(row, col + 9, target['reported'], false_format)
             if target['email'] in self.targets_clicked:
                 for event in self.timeline:
                     if event.message == "Clicked Link" and event.email == target['email']:
@@ -832,15 +834,17 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 8, browser_details, text_format)
-                        worksheet.write(row, col + 9, os_details, text_format)
+                        worksheet.write(row, col + 10, browser_details, text_format)
+                        worksheet.write(row, col + 11, os_details, text_format)
             else:
-                worksheet.write(row, col + 8, "N/A", text_format)
-                worksheet.write(row, col + 9, "N/A", text_format)
+                worksheet.write(row, col + 10, "N/A", text_format)
+                worksheet.write(row, col + 11, "N/A", text_format)
             row += 1
             target_counter += 1
             print(f"[+] Created row for {target_counter} of {self.total_targets}.")
 
+        # format data as table
+        worksheet.add_table(1,0,row,11)
 
         print("[+] Finished writing events summary...")
         print("[+] Detailed results analysis is next and will take some time if you had a lot of targets...")
@@ -859,7 +863,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         # write table headers
         header_col = 0
-        headers = ["Target", "Event", "Time", "IP", "Country", "Browser", "Operating System", "Data Captured", "Position", "First Name", "Last Name","Hostname","City","Region","Location","Postal","Timezone","ASn","Company"]
+        headers = ["Target", "Event", "Timestamp", "Date", "Time", "30 Minute Group", "IP", "Country", "Browser", "Operating System", "Data Captured", "Position", "Department", "Description", "First Name", "Last Name","Hostname","City","Region","Location","Postal","Timezone","ASn","Company"]
         for header in headers:
             worksheet.write(row, header_col, header, header_format)
             header_col += 1
@@ -879,33 +883,42 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             for event in self.timeline:
                 if event.email == target.email:
                     # write email
-                    worksheet.write(row, col, target.email, wrap_format)
+                    worksheet.write(row, col, target.email)
 
                     # write event name (email opened, clicked, etc.)
-                    worksheet.write(row, col + 1, event.message, wrap_format)
+                    worksheet.write(row, col + 1, event.message)
 
                     # write event timestamp
                     temp = event.time.split('T')
-                    worksheet.write(row, col + 2, f"{temp[0]} {temp[1].split('.')[0]}", wrap_format)
+                    worksheet.write(row, col + 2, f"{temp[0]} {temp[1].split('.')[0]}", custom_datetime_format)
+
+                    # write event date
+                    worksheet.write(row, col + 3, "=DATEVALUE([@Timestamp])")
+
+                    # write event time
+                    worksheet.write(row, col + 4, "=TIMEVALUE([@Timestamp])")
+
+                    # write event 30 minute group
+                    worksheet.write(row, col + 5, '=FLOOR([@Time];"00:30")')
 
                     # record IP result
                     if event.message == "Clicked Link" or event.message == "Submitted Data":
                         browser_ip = event.details['browser']['address']
-                        worksheet.write(row, col + 3, f"{browser_ip}", wrap_format)
+                        worksheet.write(row, col + 6, f"{browser_ip}")
 
                         # Parse the location data
                         loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 4, loc["country"], wrap_format)
+                        worksheet.write(row, col + 7, loc["country"])
 
                         # Parse the user-agent string and add browser and OS details
                         user_agent = parse(event.details['browser']['user-agent'])
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
-                        worksheet.write(row, col + 5, browser_details, wrap_format)
+                        worksheet.write(row, col + 8, browser_details)
                         self.browsers.append(browser_details)
 
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 6, os_details, wrap_format)
+                        worksheet.write(row, col + 9, os_details, wrap_format)
                         self.operating_systems.append(os_details)
 
                         if event.message == "Submitted Data":
@@ -922,32 +935,41 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 # To get just submitted data, we drop the 'rid' key
                                 if not key == "sq":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                            worksheet.write(row, col + 7, submitted_data, text_format)
+                            worksheet.write(row, col + 10, submitted_data, text_format)
 
                         # print geoip data hostname, city, ...
-                        worksheet.write(row, col + 11, loc['hostname'], text_format)
-                        worksheet.write(row, col + 12, loc['city'], text_format)
-                        worksheet.write(row, col + 13, loc['region'], text_format)
-                        worksheet.write(row, col + 14, loc['loc'], text_format)
-                        worksheet.write(row, col + 15, loc['postal'], text_format)
-                        worksheet.write(row, col + 16, loc['timezone'], text_format)
-                        worksheet.write(row, col + 17, loc['asn'], text_format)
-                        worksheet.write(row, col + 18, loc['company'], text_format)
+                        worksheet.write(row, col + 16, loc['hostname'], text_format)
+                        worksheet.write(row, col + 17, loc['city'], text_format)
+                        worksheet.write(row, col + 18, loc['region'], text_format)
+                        worksheet.write(row, col + 19, loc['loc'], text_format)
+                        worksheet.write(row, col + 20, loc['postal'], text_format)
+                        worksheet.write(row, col + 21, loc['timezone'], text_format)
+                        worksheet.write(row, col + 22, loc['asn'], text_format)
+                        worksheet.write(row, col + 23, loc['company'], text_format)
 
                     # print position
-                    worksheet.write(row, col + 8, f"{position}", wrap_format)
+                    worksheet.write(row, col + 11, f"{position}", text_format)
+
+                    # print department
+                    worksheet.write(row, col + 12, "", text_format)
+
+                    # print description
+                    worksheet.write(row, col + 13, "", text_format)
 
                     # print first name
-                    worksheet.write(row, col + 9, f"{fname}", wrap_format)
+                    worksheet.write(row, col + 14, f"{fname}", text_format)
 
                     # print last name
-                    worksheet.write(row, col + 10, f"{lname}", wrap_format)
+                    worksheet.write(row, col + 15, f"{lname}", text_format)
 
                     row += 1
 
             # count and print processed targets number
             target_counter += 1
             print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
+        
+        # format data as table
+        worksheet.add_table(1,0,row,23)
 
         print("[+] Finished writing detailed analysis...")
 
