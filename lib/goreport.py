@@ -692,8 +692,16 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         text_format.set_align('vcenter')
         # Custom datetime format
         custom_datetime_format = goreport_xlsx.add_format()
-        custom_datetime_format.set_num_format('JJJJ-MM-TT hh:mm:ss')
+        custom_datetime_format.set_num_format('YYYY-MM-DD hh:mm:ss')
         custom_datetime_format.set_align('vcenter')
+        # Time format
+        time_format = goreport_xlsx.add_format()
+        time_format.set_num_format('hh:mm:ss')
+        time_format.set_align('vcenter')
+        # Date format
+        date_format = goreport_xlsx.add_format()
+        date_format.set_num_format('YYYY-MM-DD')
+        date_format.set_align('vcenter')
 
         worksheet = goreport_xlsx.add_worksheet("Overview")
         col = 0
@@ -794,13 +802,6 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         worksheet.set_column(0, 10, 20)
 
-        header_col = 0
-        headers = ["Email Address", "First Name", "Last Name", "Position", "Department", "Description", "Open", "Click", "Creds", "Report", "Browser", "OS"]
-        for header in headers:
-            worksheet.write(row, header_col, header, header_format)
-            header_col += 1
-        row += 1
-
         # Sort campaign summary by each dict's email entry and then create results table
         target_counter = 0
         ordered_results = sorted(self.campaign_results_summary, key=lambda k: k['email'])
@@ -843,8 +844,13 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             target_counter += 1
             print(f"[+] Created row for {target_counter} of {self.total_targets}.")
 
+        header_row = [{'header': 'Email Address'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'Open'}, {'header': 'Click'}, {'header': 'Creds'}, {'header': 'Report'}, {'header': 'Browser'}, {'header': 'OS'}]
+
         # format data as table
-        worksheet.add_table(1,0,row,11)
+        worksheet.add_table(1,0,row,11, {'columns': header_row})
+
+        # set autofit for column width in the worksheet
+        worksheet.autofit()
 
         print("[+] Finished writing events summary...")
         print("[+] Detailed results analysis is next and will take some time if you had a lot of targets...")
@@ -861,12 +867,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         target_counter = 0
 
-        # write table headers
-        header_col = 0
-        headers = ["Target", "Event", "Timestamp", "Date", "Time", "30 Minute Group", "IP", "Country", "Browser", "Operating System", "Data Captured", "Position", "Department", "Description", "First Name", "Last Name","Hostname","City","Region","Location","Postal","Timezone","ASn","Company"]
-        for header in headers:
-            worksheet.write(row, header_col, header, header_format)
-            header_col += 1
+        # skip header row
         row += 1
 
         for target in self.results:
@@ -891,15 +892,6 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                     # write event timestamp
                     temp = event.time.split('T')
                     worksheet.write(row, col + 2, f"{temp[0]} {temp[1].split('.')[0]}", custom_datetime_format)
-
-                    # write event date
-                    worksheet.write(row, col + 3, "=DATEVALUE([@Timestamp])")
-
-                    # write event time
-                    worksheet.write(row, col + 4, "=TIMEVALUE([@Timestamp])")
-
-                    # write event 30 minute group
-                    worksheet.write(row, col + 5, '=FLOOR([@Time];"00:30")')
 
                     # record IP result
                     if event.message == "Clicked Link" or event.message == "Submitted Data":
@@ -967,9 +959,14 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             # count and print processed targets number
             target_counter += 1
             print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
-        
+
+        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp'}, {'header': 'Date', 'formula': '=DATEVALUE([@Timestamp])','format': date_format}, {'header': 'Time', 'formula': '=TIMEVALUE([@Timestamp])', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Country'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'},{'header': 'Hostname'},{'header': 'City'},{'header': 'Region'},{'header': 'Location'},{'header': 'Postal'},{'header': 'Timezone'},{'header': 'ASn'},{'header': 'Company'}]
+
         # format data as table
-        worksheet.add_table(1,0,row,23)
+        worksheet.add_table(1,0,row,23, {'columns': header_row})
+
+        # set autofit for column width in the worksheet
+        worksheet.autofit()
 
         print("[+] Finished writing detailed analysis...")
 
