@@ -802,6 +802,9 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
         worksheet.set_column(0, 10, 20)
 
+        # skip first header row
+        row += 1
+
         # Sort campaign summary by each dict's email entry and then create results table
         target_counter = 0
         ordered_results = sorted(self.campaign_results_summary, key=lambda k: k['email'])
@@ -963,7 +966,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp'}, {'header': 'Date', 'formula': '=DATEVALUE([@Timestamp])','format': date_format}, {'header': 'Time', 'formula': '=TIMEVALUE([@Timestamp])', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Country'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'},{'header': 'Hostname'},{'header': 'City'},{'header': 'Region'},{'header': 'Location'},{'header': 'Postal'},{'header': 'Timezone'},{'header': 'ASn'},{'header': 'Company'}]
 
         # format data as table
-        worksheet.add_table(1,0,row,23, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),23, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()
