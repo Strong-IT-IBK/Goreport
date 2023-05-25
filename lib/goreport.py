@@ -801,8 +801,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         col = 0
 
         worksheet.set_column(0, 10, 20)
+        worksheet.write(row, col, "Summary View", bold_format)
+        row += 1
 
-        # skip first header row
+        # skip first table header row
         row += 1
 
         # Sort campaign summary by each dict's email entry and then create results table
@@ -850,7 +852,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         header_row = [{'header': 'Email Address'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'Open'}, {'header': 'Click'}, {'header': 'Creds'}, {'header': 'Report'}, {'header': 'Browser'}, {'header': 'OS'}]
 
         # format data as table
-        worksheet.add_table(1,0,row,11, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),11, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()
