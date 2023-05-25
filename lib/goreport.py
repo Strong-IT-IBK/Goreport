@@ -25,11 +25,13 @@ from collections import Counter
 # 3rd Party Libraries
 import requests
 import xlsxwriter
+import pytz
 from docx import Document
 from docx.enum.style import WD_STYLE_TYPE
 from docx.shared import Cm, Pt, RGBColor
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from user_agents import parse
+from datetime import datetime
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -652,6 +654,15 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         result can be written to the csv file and have the different pieces end up in the correct
         columns.
         """
+
+        # Time settings for setting correct time (we get timestamps in UTC)
+        # set the time zone
+        timezone = 'Europe/Vienna'
+        # get the current time in the selected time zone
+        dt = datetime.now(pytz.timezone(timezone))
+        # get the UTC offset for the selected time zone
+        utc_offset = int(dt.utcoffset().total_seconds() / 3600)
+
         goreport_xlsx = xlsxwriter.Workbook(self.output_xlsx_report)
         # Bold format
         bold_format = goreport_xlsx.add_format({'bold': True})
@@ -894,28 +905,31 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                     # write event name (email opened, clicked, etc.)
                     worksheet.write(row, col + 1, event.message)
 
-                    # write event timestamp
+                    # write event timestamp (in UTC)
                     temp = event.time.split('T')
                     worksheet.write(row, col + 2, f"{temp[0]} {temp[1].split('.')[0]}", custom_datetime_format)
+
+                    # write time offset (of UTC Time)
+                    worksheet.write(row, col + 3, f"0{utc_offset}:00:00",time_format)
 
                     # record IP result
                     if event.message == "Clicked Link" or event.message == "Submitted Data":
                         browser_ip = event.details['browser']['address']
-                        worksheet.write(row, col + 6, f"{browser_ip}")
+                        worksheet.write(row, col + 7, f"{browser_ip}")
 
                         # Parse the location data
                         loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 7, loc["country"])
+                        worksheet.write(row, col + 8, loc["country"])
 
                         # Parse the user-agent string and add browser and OS details
                         user_agent = parse(event.details['browser']['user-agent'])
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
-                        worksheet.write(row, col + 8, browser_details)
+                        worksheet.write(row, col + 9, browser_details)
                         self.browsers.append(browser_details)
 
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 9, os_details, wrap_format)
+                        worksheet.write(row, col + 10, os_details, wrap_format)
                         self.operating_systems.append(os_details)
 
                         if event.message == "Submitted Data":
@@ -932,32 +946,32 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 # To get just submitted data, we drop the 'rid' key
                                 if not key == "sq":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                            worksheet.write(row, col + 10, submitted_data, text_format)
+                            worksheet.write(row, col + 11, submitted_data, text_format)
 
                         # print geoip data hostname, city, ...
-                        worksheet.write(row, col + 16, loc['hostname'], text_format)
-                        worksheet.write(row, col + 17, loc['city'], text_format)
-                        worksheet.write(row, col + 18, loc['region'], text_format)
-                        worksheet.write(row, col + 19, loc['loc'], text_format)
-                        worksheet.write(row, col + 20, loc['postal'], text_format)
-                        worksheet.write(row, col + 21, loc['timezone'], text_format)
-                        worksheet.write(row, col + 22, loc['asn'], text_format)
-                        worksheet.write(row, col + 23, loc['company'], text_format)
+                        worksheet.write(row, col + 17, loc['hostname'], text_format)
+                        worksheet.write(row, col + 18, loc['city'], text_format)
+                        worksheet.write(row, col + 19, loc['region'], text_format)
+                        worksheet.write(row, col + 20, loc['loc'], text_format)
+                        worksheet.write(row, col + 21, loc['postal'], text_format)
+                        worksheet.write(row, col + 22, loc['timezone'], text_format)
+                        worksheet.write(row, col + 23, loc['asn'], text_format)
+                        worksheet.write(row, col + 24, loc['company'], text_format)
 
                     # print position
-                    worksheet.write(row, col + 11, f"{position}", text_format)
+                    worksheet.write(row, col + 12, f"{position}", text_format)
 
                     # print department
-                    worksheet.write(row, col + 12, "", text_format)
-
-                    # print description
                     worksheet.write(row, col + 13, "", text_format)
 
+                    # print description
+                    worksheet.write(row, col + 14, "", text_format)
+
                     # print first name
-                    worksheet.write(row, col + 14, f"{fname}", text_format)
+                    worksheet.write(row, col + 15, f"{fname}", text_format)
 
                     # print last name
-                    worksheet.write(row, col + 15, f"{lname}", text_format)
+                    worksheet.write(row, col + 16, f"{lname}", text_format)
 
                     row += 1
 
@@ -965,10 +979,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             target_counter += 1
             print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
 
-        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp'}, {'header': 'Date', 'formula': '=DATEVALUE([@Timestamp])','format': date_format}, {'header': 'Time', 'formula': '=TIMEVALUE([@Timestamp])', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Country'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'},{'header': 'Hostname'},{'header': 'City'},{'header': 'Region'},{'header': 'Location'},{'header': 'Postal'},{'header': 'Timezone'},{'header': 'ASn'},{'header': 'Company'}]
+        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp UTC'}, {'header': 'Time Offset'}, {'header': 'Date', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]','format': date_format}, {'header': 'Time', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Country'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'},{'header': 'Hostname'},{'header': 'City'},{'header': 'Region'},{'header': 'Location'},{'header': 'Postal'},{'header': 'Timezone'},{'header': 'ASn'},{'header': 'Company'}]
 
         # format data as table
-        worksheet.add_table(1,0,(row-1),23, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),24, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()

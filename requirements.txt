@@ -6,3 +6,5 @@ python-dateutil
 user-agents
 click
 xlsxwriter
+pytz
+datetime
