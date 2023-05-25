@@ -666,7 +666,6 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         goreport_xlsx = xlsxwriter.Workbook(self.output_xlsx_report)
         # Bold format
         bold_format = goreport_xlsx.add_format({'bold': True})
-        bold_format.set_text_wrap()
         bold_format.set_align('vcenter')
         # Centered format
         center_format = goreport_xlsx.add_format()
@@ -1006,7 +1005,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
         counted_browsers = Counter(self.browsers)
         for key, value in counted_browsers.items():
-            worksheet.write(row, col, f"{key}", wrap_format)
+            worksheet.write(row, col, f"{key}", text_format)
             worksheet.write_number(row, col + 1, value, num_format)
             row += 1
 
@@ -1023,7 +1022,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
         counted_os = Counter(self.operating_systems)
         for key, value in counted_os.items():
-            worksheet.write(row, col, f"{key}", wrap_format)
+            worksheet.write(row, col, f"{key}", text_format)
             worksheet.write_number(row, col + 1, value, num_format)
             row += 1
 
@@ -1040,7 +1039,7 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
         counted_ip_addresses = Counter(self.total_ip_addresses)
         for key, value in counted_ip_addresses.items():
-            worksheet.write(row, col, f"{key}", wrap_format)
+            worksheet.write(row, col, f"{key}", text_format)
             worksheet.write_number(row, col + 1, value, num_format)
             row += 1
 
@@ -1056,9 +1055,9 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             header_col += 1
         row += 1
         for key, value in self.ip_and_location.items():
-            worksheet.write(row, col, f"{key}", wrap_format)
-            worksheet.write(row, col + 1, f"{value['country']}", wrap_format)
-            worksheet.write(row, col + 2, f"{value['city']}", wrap_format)
+            worksheet.write(row, col, f"{key}", text_format)
+            worksheet.write(row, col + 1, f"{value['country']}", text_format)
+            worksheet.write(row, col + 2, f"{value['city']}", text_format)
             row += 1
 
         goreport_xlsx.close()
