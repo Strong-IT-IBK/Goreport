@@ -480,10 +480,15 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             temp_dict["email"] = target.email
             temp_dict["fname"] = target.first_name
             temp_dict["lname"] = target.last_name
-            position = "None Provided"
-            if target.position:
-                position = target.position
-            temp_dict["position"] = position
+            temp_dict["position"] = target.position if target.position else "None Provided"
+            temp_dict["department"] = target.department if target.department else "None Provided"
+            temp_dict["dep_number"] = target.dep_number if target.dep_number else "None Provided"
+            temp_dict["age"] = target.age if target.age else "None Provided"
+            temp_dict["gender"] = target.gender if target.gender else "None Provided"
+            temp_dict["desc"] = target.desc if target.desc else "None Provided"
+            temp_dict["site"] = target.site if target.site else "None Provided"
+            temp_dict["phone"] = target.phone if target.phone else "None Provided"
+            temp_dict["degree"] = target.degree if target.degree else "None Provided"
             temp_dict["ip_address"] = target.ip
             # Check if this target was recorded as viewing the email (tracking image)
             if target.email in self.targets_opened:
@@ -886,15 +891,17 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
         row += 1
 
         for target in self.results:
-            position = ""
-            fname = ""
-            lname = ""
-            if target.position:
-                position = target.position
-            if target.first_name:
-                fname = target.first_name
-            if target.last_name:
-                lname = target.last_name
+            position = target.position if target.position else ""
+            fname = target.first_name if target.first_name else ""
+            lname = target.last_name if target.last_name else ""
+            dep = target.department if target.department else ""
+            depnumber = target.dep_number if target.dep_number else ""
+            age = target.age if target.age else ""
+            gender = target.gender if target.gender else ""
+            site = target.site if target.site else ""
+            phone = target.phone if target.phone else ""
+            degree = target.degree if target.degree else ""
+            desc = target.desc if target.desc else ""
             # Go through all events to find events for this target
             for event in self.timeline:
                 if event.email == target.email:
@@ -918,17 +925,16 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
 
                         # Parse the location data
                         loc = self.geolocate(target, event.details['browser']['address'], self.google)
-                        worksheet.write(row, col + 8, loc["country"])
 
                         # Parse the user-agent string and add browser and OS details
                         user_agent = parse(event.details['browser']['user-agent'])
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
-                        worksheet.write(row, col + 9, browser_details)
+                        worksheet.write(row, col + 8, browser_details)
                         self.browsers.append(browser_details)
 
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 10, os_details, wrap_format)
+                        worksheet.write(row, col + 9, os_details, wrap_format)
                         self.operating_systems.append(os_details)
 
                         if event.message == "Submitted Data":
@@ -945,32 +951,51 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 # To get just submitted data, we drop the 'rid' key
                                 if not key == "sq":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
-                            worksheet.write(row, col + 11, submitted_data, text_format)
+                            worksheet.write(row, col + 10, submitted_data, text_format)
 
                         # print geoip data hostname, city, ...
-                        worksheet.write(row, col + 17, loc['hostname'], text_format)
-                        worksheet.write(row, col + 18, loc['city'], text_format)
-                        worksheet.write(row, col + 19, loc['region'], text_format)
-                        worksheet.write(row, col + 20, loc['loc'], text_format)
-                        worksheet.write(row, col + 21, loc['postal'], text_format)
-                        worksheet.write(row, col + 22, loc['timezone'], text_format)
-                        worksheet.write(row, col + 23, loc['asn'], text_format)
-                        worksheet.write(row, col + 24, loc['company'], text_format)
+                        worksheet.write(row, col + 22, loc['hostname'], text_format)
+                        worksheet.write(row, col + 23, loc['city'], text_format)
+                        worksheet.write(row, col + 24, loc['region'], text_format)
+                        worksheet.write(row, col + 25, loc["country"], text_format)
+                        worksheet.write(row, col + 26, loc['loc'], text_format)
+                        worksheet.write(row, col + 27, loc['postal'])
+                        worksheet.write(row, col + 28, loc['timezone'], text_format)
+                        worksheet.write(row, col + 29, loc['asn'], text_format)
+                        worksheet.write(row, col + 30, loc['company'], text_format)
 
                     # print position
-                    worksheet.write(row, col + 12, f"{position}", text_format)
+                    worksheet.write(row, col + 11, f"{position}", text_format)
 
                     # print department
-                    worksheet.write(row, col + 13, "", text_format)
+                    worksheet.write(row, col + 12, f"{dep}", text_format)
+
+                    # print department number
+                    worksheet.write(row, col + 13, f"{depnumber}")
+
+                    # print age
+                    worksheet.write(row, col + 14, f"{age}")
+
+                    # print gender
+                    worksheet.write(row, col + 15, f"{gender}", text_format)
+
+                    # print site
+                    worksheet.write(row, col + 16, f"{site}", text_format)
+
+                    # print phone
+                    worksheet.write(row, col + 17, f"{phone}", text_format)
+
+                    # print degree
+                    worksheet.write(row, col + 18, f"{degree}", text_format)
 
                     # print description
-                    worksheet.write(row, col + 14, "", text_format)
+                    worksheet.write(row, col + 19, f"{desc}", text_format)
 
                     # print first name
-                    worksheet.write(row, col + 15, f"{fname}", text_format)
+                    worksheet.write(row, col + 20, f"{fname}", text_format)
 
                     # print last name
-                    worksheet.write(row, col + 16, f"{lname}", text_format)
+                    worksheet.write(row, col + 21, f"{lname}", text_format)
 
                     row += 1
 
@@ -978,10 +1003,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             target_counter += 1
             print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
 
-        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp UTC'}, {'header': 'Time Offset'}, {'header': 'Date', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]','format': date_format}, {'header': 'Time', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Country'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'},{'header': 'Hostname'},{'header': 'City'},{'header': 'Region'},{'header': 'Location'},{'header': 'Postal'},{'header': 'Timezone'},{'header': 'ASn'},{'header': 'Company'}]
+        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp UTC'}, {'header': 'Time Offset'}, {'header': 'Date', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]','format': date_format}, {'header': 'Time', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Department Number'}, {'header': 'Age'}, {'header': 'Gender'}, {'header': 'Site'}, {'header': 'Phone'}, {'header': 'Degree'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'IP Hostname'},{'header': 'GeoIP City'},{'header':'GeoIP Region'},{'header': 'GeoIP Country'},{'header': 'GeoIP Location'},{'header': 'GeoIP Postal'},{'header': 'GeoIP Timezone'},{'header': 'IP ASn'},{'header': 'IP Company'}]
 
         # format data as table
-        worksheet.add_table(1,0,(row-1),24, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),30, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()

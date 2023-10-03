@@ -1,6 +1,6 @@
 python-docx
 requests
-gophish
+gophish @ git+https://github.com/Strong-IT-IBK/gophish-api-client-python@master
 configparser
 python-dateutil
 user-agents
