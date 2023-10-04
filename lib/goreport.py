@@ -833,22 +833,23 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             worksheet.write(row, col + 4, target['department'], text_format)
             worksheet.write(row, col + 5, target['dep_number'], text_format)
             worksheet.write(row, col + 6, target['desc'], text_format)
+            worksheet.write(row, col + 7, "TRUE", false_format)
             if target['opened']:
-                worksheet.write_boolean(row, col + 7, target['opened'], true_format)
+                worksheet.write_boolean(row, col + 8, target['opened'], true_format)
             else:
-                worksheet.write_boolean(row, col + 7, target['opened'], false_format)
+                worksheet.write_boolean(row, col + 8, target['opened'], false_format)
             if target['clicked']:
-                worksheet.write_boolean(row, col + 8, target['clicked'], true_format)
+                worksheet.write_boolean(row, col + 9, target['clicked'], true_format)
             else:
-                worksheet.write_boolean(row, col + 8, target['clicked'], false_format)
+                worksheet.write_boolean(row, col + 9, target['clicked'], false_format)
             if target['submitted']:
-                worksheet.write_boolean(row, col + 9, target['submitted'], true_format)
+                worksheet.write_boolean(row, col + 10, target['submitted'], true_format)
             else:
-                worksheet.write_boolean(row, col + 9, target['submitted'], false_format)
+                worksheet.write_boolean(row, col + 10, target['submitted'], false_format)
             if target['reported']:
-                worksheet.write_boolean(row, col + 10, target['reported'], true_format)
+                worksheet.write_boolean(row, col + 11, target['reported'], true_format)
             else:
-                worksheet.write_boolean(row, col + 10, target['reported'], false_format)
+                worksheet.write_boolean(row, col + 11, target['reported'], false_format)
             if target['email'] in self.targets_clicked:
                 for event in self.timeline:
                     if event.message == "Clicked Link" and event.email == target['email']:
@@ -856,19 +857,19 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                         browser_details = user_agent.browser.family + " " + \
                             user_agent.browser.version_string
                         os_details = user_agent.os.family + " " + user_agent.os.version_string
-                        worksheet.write(row, col + 11, browser_details, text_format)
-                        worksheet.write(row, col + 12, os_details, text_format)
+                        worksheet.write(row, col + 12, browser_details, text_format)
+                        worksheet.write(row, col + 13, os_details, text_format)
             else:
-                worksheet.write(row, col + 11, "N/A", text_format)
                 worksheet.write(row, col + 12, "N/A", text_format)
+                worksheet.write(row, col + 13, "N/A", text_format)
             row += 1
             target_counter += 1
             print(f"[+] Created row for {target_counter} of {self.total_targets}.")
 
-        header_row = [{'header': 'Email Address'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Department Number'}, {'header': 'Description'}, {'header': 'Open'}, {'header': 'Click'}, {'header': 'Creds'}, {'header': 'Report'}, {'header': 'Browser'}, {'header': 'OS'}]
+        header_row = [{'header': 'Email Address'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Department Number'}, {'header': 'Description'}, {'header': 'Mail delivered'}, {'header': 'Open'}, {'header': 'Click'}, {'header': 'Creds'}, {'header': 'Report'}, {'header': 'Browser'}, {'header': 'OS'}]
 
         # format data as table
-        worksheet.add_table(1,0,(row-1),12, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),13, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()
