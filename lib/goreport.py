@@ -904,6 +904,8 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             phone = target.phone if target.phone else ""
             degree = target.degree if target.degree else ""
             desc = target.desc if target.desc else ""
+            first_click = True
+            first_submit = True
             # Go through all events to find events for this target
             for event in self.timeline:
                 if event.email == target.email:
@@ -945,6 +947,12 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                             #   2. Assuming that, the following process does NOT flag IP mismatches
                             #      or add to the list of seen locations, OSs, IPs, or browsers.
 
+                            # check if this is the first data submit event. If yes, mark this as first submit event.
+                            if first_submit:
+                                 worksheet.write(row, col + 32, "TRUE", true_format)
+                            else:
+                                worksheet.write(row, col + 32, "FALSE", false_format)
+                            first_submit = False
                             # Get just the submitted data from the event's payload
                             submitted_data = ""
                             data_payload = event.details['payload']
@@ -954,7 +962,13 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
                                 if not key == "sq":
                                     submitted_data += f"{key}:{str(value).strip('[').strip(']')}"
                             worksheet.write(row, col + 10, submitted_data, text_format)
-
+                        else:
+                            # check if this is the first Clicked Link event. If yes, mark this as first Clicked Link event.
+                            if first_click:
+                                 worksheet.write(row, col + 31, "TRUE", true_format)
+                            else:
+                                worksheet.write(row, col + 31, "FALSE", false_format)
+                            first_click = False
                         # print geoip data hostname, city, ...
                         worksheet.write(row, col + 22, loc['hostname'], text_format)
                         worksheet.write(row, col + 23, loc['city'], text_format)
@@ -1005,10 +1019,10 @@ Ensure the IDs are provided as comma-separated integers or interger ranges, e.g.
             target_counter += 1
             print(f"[+] Processed detailed analysis for {target_counter} of {self.total_targets}.")
 
-        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp UTC'}, {'header': 'Time Offset'}, {'header': 'Date', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]','format': date_format}, {'header': 'Time', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Department Number'}, {'header': 'Age'}, {'header': 'Gender'}, {'header': 'Site'}, {'header': 'Phone'}, {'header': 'Degree'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'IP Hostname'},{'header': 'GeoIP City'},{'header':'GeoIP Region'},{'header': 'GeoIP Country'},{'header': 'GeoIP Location'},{'header': 'GeoIP Postal'},{'header': 'GeoIP Timezone'},{'header': 'IP ASn'},{'header': 'IP Company'}]
+        header_row = [{'header': 'Target'}, {'header': 'Event'}, {'header': 'Timestamp UTC'}, {'header': 'Time Offset'}, {'header': 'Date', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]','format': date_format}, {'header': 'Time', 'formula': '=[@[Timestamp UTC]]+[@[Time Offset]]', 'format': time_format}, {'header': '30 Minute Group', 'formula': '=FLOOR([@Time],"00:30")', 'format': time_format}, {'header': 'IP'}, {'header': 'Browser'}, {'header': 'Operating System'}, {'header': 'Data Captured'}, {'header': 'Position'}, {'header': 'Department'}, {'header': 'Department Number'}, {'header': 'Age'}, {'header': 'Gender'}, {'header': 'Site'}, {'header': 'Phone'}, {'header': 'Degree'}, {'header': 'Description'}, {'header': 'First Name'}, {'header': 'Last Name'}, {'header': 'IP Hostname'},{'header': 'GeoIP City'},{'header':'GeoIP Region'},{'header': 'GeoIP Country'},{'header': 'GeoIP Location'},{'header': 'GeoIP Postal'},{'header': 'GeoIP Timezone'},{'header': 'IP ASn'},{'header': 'IP Company'},{'header': 'First Click Event'},{'header': 'First Data Submit Event'}]
 
         # format data as table
-        worksheet.add_table(1,0,(row-1),30, {'columns': header_row})
+        worksheet.add_table(1,0,(row-1),32, {'columns': header_row})
 
         # set autofit for column width in the worksheet
         worksheet.autofit()
